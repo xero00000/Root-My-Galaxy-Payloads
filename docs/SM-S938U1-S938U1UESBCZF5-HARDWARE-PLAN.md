@@ -76,4 +76,3 @@ Suggested diagnostic order (abort on unexpected panic without logs):
 - Do not force another PA3Q profile (`S938N` / `S9380` CZF1) onto this phone.
 - Do not treat a single lucky boot as “device-tested” without recording the
   exact app/payload commit and feed commit used.
-EOF

@@ -67,8 +67,8 @@
         "size": 104128
       },
       "kernelsu": {
-        "url": "https://raw.githubusercontent.com/BuSung-dev/Root-My-Galaxy-Payloads/main/kernelsu/ksud-s25u-kdp",
-        "size": 6407096,
+        "url": "https://raw.githubusercontent.com/BuSung-dev/Root-My-Galaxy-Payloads/main/kernelsu/ksud-pa3q-S938USQSBCZF5-kdp",
+        "size": 4622960,
         "kmi": "android15-6.6",
         "managerPackage": "me.weishu.kernelsu"
       }

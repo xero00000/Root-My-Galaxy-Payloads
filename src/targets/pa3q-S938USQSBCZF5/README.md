@@ -11,10 +11,10 @@ Galaxy S25 Ultra `SM-S938U1` / internal kernel build `S938USQSBCZF5`
   package and recovered `vmlinux`/`BTF`.
 - App release payload built with Android NDK r29 (`API=35`), size-gated to
   104128 bytes.
-- KernelSU currently reuses the shared PA3Q `android15-6.6` / `ksud-s25u-kdp`
-  artifacts. Exact vermagic rebuild for
-  `6.6.98-android15-8-pd6ff1cd-abogkiS938USQSBCZF5-4k` has not been produced on
-  this workstation. Treat KernelSU late-load as unproven for this build.
+- KernelSU was rebuilt in the Android 15/6.6 DDK with the exact
+  `6.6.98-android15-8-pd6ff1cd-abogkiS938USQSBCZF5-4k` vermagic, audited
+  against the recovered target ELF, and embedded in the profile-specific
+  `ksud-pa3q-S938USQSBCZF5-kdp`.
 
 Full derivation record:
 [`docs/SM-S938U1-S938U1UESBCZF5.md`](../../../docs/SM-S938U1-S938U1UESBCZF5.md).
@@ -33,7 +33,11 @@ cp build/pa3q-S938USQSBCZF5/cve-2026-43499-app.release.so \
 - All 32 P0 fingerprint rows
 - Build identity / kernel release / fingerprint
 
-Provisional (same as other PA3Q, not ABL-decoded here):
+Statically derived from the exact CZF5 syscall stack layouts:
 
-- `P0_KERNEL_PHYS_LOAD = 0xa8000000`
 - `SLIDE_PSELECT_WORD_SHIFT = 0`
+
+ABL-decoded for this exact BL package:
+
+- `P0_PHYS_OFFSET = 0x80000000`
+- `P0_KERNEL_PHYS_LOAD = 0x80080000`

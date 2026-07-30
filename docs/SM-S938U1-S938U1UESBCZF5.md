@@ -161,15 +161,46 @@ Draft header: `recovered/p0_fingerprint.h`.
 
 ### Physical load address
 
-`P0_PHYS_OFFSET = 0x80000000` and `P0_KERNEL_PHYS_LOAD = 0xa8000000` are
-retained from the other PA3Q Snapdragon S25 Ultra profiles. The Qualcomm ABL
-ELF does not contain a raw `0xa8000000` dword; treat the load address as
-**provisional** until the ABL jump path is fully decoded for this package.
+The outer ABL's compressed UEFI firmware volume contains an AArch64
+`LinuxLoader` PE image. In that image, PE RVA `0x0130d8` enumerates EFI RAM
+partition descriptors, selects the lowest descriptor base, and stores it as
+the memory base. Its diagnostic string is `Memory Base Address: 0x%x` at PE
+RVA `0x0d57e7`.
+
+The exact CZF5 kernel has a valid ARM64 Image header (`ARMd` at offset `0x38`),
+`text_offset = 0`, `image_size = 0x027b0000`, and flags `0x0a`. The ARM64 path
+at PE RVA `0x0185c8` selects the `0x00080000` load offset and combines it with
+the memory base. The matching platform DTBs independently anchor the first
+reserved DDR region at `0x80000000`, fixing the lowest RAM base used by that
+calculation.
+
+Therefore:
+
+```c
+#define P0_PHYS_OFFSET      0x80000000ULL
+#define P0_KERNEL_PHYS_LOAD 0x80080000ULL
+```
+
+This is derived from the exact CZF5 BL/AP inputs and is not copied from the
+older PA3Q profiles.
 
 ### Pselect word shift
 
-Other PA3Q targets leave `SLIDE_PSELECT_WORD_SHIFT` at the source default `0`.
-Draft target sets it explicitly to `0`. **Not hardware-validated on CZF5.**
+The exact CZF5 disassembly fixes both sides of the stack overlap relative to
+the syscall-entry stack pointer `E`:
+
+- `__arm64_sys_futex` reserves `0x70`, `do_futex` reserves `0x60`, and
+  `futex_wait_requeue_pi` places its `rt_mutex_waiter` at frame offset `0x90`
+  in a `0x1c0` frame: `E - 0x70 - 0x60 - 0x1c0 + 0x90 = E - 0x200`.
+- `__arm64_sys_pselect6` reserves `0x90`, and `core_sys_select` places
+  `stack_fds` at frame offset `0x80` in a `0x1f0` frame:
+  `E - 0x90 - 0x1f0 + 0x80 = E - 0x200`.
+
+Waiter qword zero therefore coincides with the first logical fd-set qword:
+
+```c
+#define SLIDE_PSELECT_WORD_SHIFT 0
+```
 
 ## Draft artifacts (analysis tree only)
 
@@ -186,12 +217,11 @@ recovered/vmlinux.nm
 These have **not** been copied into `Root-My-Galaxy-Payloads` yet. Remaining
 upstream work:
 
-1. Optional deeper ABL confirmation of `P0_KERNEL_PHYS_LOAD`.
-2. Copy drafts to `src/targets/pa3q-S938USQSBCZF5/`.
-3. Build app payload (NDK r29) and size-check.
-4. Build KernelSU module for exact vermagic + audit imports.
-5. Rebuild `ksud`, add support-feed entry, provenance in payloads docs.
-6. Separate hardware-validation plan before any device run.
+1. Copy drafts to `src/targets/pa3q-S938USQSBCZF5/`.
+2. Build app payload (NDK r29) and size-check.
+3. Build KernelSU module for exact vermagic + audit imports.
+4. Rebuild `ksud`, add support-feed entry, provenance in payloads docs.
+5. Separate hardware-validation plan before any device run.
 
 ## Payload build (completed offline)
 
@@ -204,7 +234,7 @@ cp build/pa3q-S938USQSBCZF5/cve-2026-43499-app.release.so \
 
 | Artifact | Size | SHA-256 |
 | --- | ---: | --- |
-| `artifacts/pa3q-S938USQSBCZF5/cve-2026-43499-app.so` | 104128 | `dac8fe3326fb76ec865497ede8d4a10c03b065c0bb0a6d7bbc8a63fef2224441` |
+| `artifacts/pa3q-S938USQSBCZF5/cve-2026-43499-app.so` | 104128 | `9cc661f39293b82474cfc1a5a47d6d41cc530df830b5654d4386007f1291f588` |
 
 Built with NDK r29 (`29.0.14206865`), API 35. Release size gate enforced.
 
@@ -212,12 +242,13 @@ Built with NDK r29 (`29.0.14206865`), API 35. Release size gate enforced.
 
 | Item | Result |
 | --- | --- |
-| Shared feed binary | `kernelsu/ksud-s25u-kdp` (same as other PA3Q) |
-| Standalone module vermagic | `6.6.127-4k-g46a034eca005-dirty ...` |
+| Feed binary | `kernelsu/ksud-pa3q-S938USQSBCZF5-kdp` (4622960 bytes; SHA-256 `3559dfbe44834ee1bd45478524bd980307312bdea868b18773af3bf0c12037a2`) |
+| Standalone module | `kernelsu/android15-6.6_kernelsu-pa3q-S938USQSBCZF5-kdp.ko` (327528 bytes; SHA-256 `3c9aaf33fab3bdacc7fd8c26d2dd5ecb19f6bfe38f0c5332044fe017544b4ef6`) |
+| Standalone module vermagic | `6.6.98-android15-8-pd6ff1cd-abogkiS938USQSBCZF5-4k SMP preempt mod_unload modversions aarch64` |
 | Target release | `6.6.98-android15-8-pd6ff1cd-abogkiS938USQSBCZF5-4k` |
-| Exact vermagic rebuild | **Not done** (requires Samsung 6.6 DDK container) |
+| Exact vermagic rebuild | Android 15/6.6 DDK image `ghcr.io/ylarod/ddk-min:android15-6.6-20260313` |
 | Module.symvers recovered | 8873 CRCs from CZF5 `vmlinux.elf` |
-| Audit of stock s25u `.ko` vs CZF5 | 0 missing symbols; empty module `__versions`; 67 missing exports; not a clean exact-target pass |
+| Exact module audit | 221 undefined imports; 0 missing target symbols; empty `__versions`; 67 resolved through kallsyms; 0 CRC mismatches |
 
 Hardware validation plan:
 [`SM-S938U1-S938U1UESBCZF5-HARDWARE-PLAN.md`](SM-S938U1-S938U1UESBCZF5-HARDWARE-PLAN.md).

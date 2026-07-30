@@ -52,8 +52,10 @@ Suggested diagnostic order (abort on unexpected panic without logs):
    - P0 fingerprint hits any of the 32 candidates
    - `P0_KERNEL_PHYS_LOAD` / `SKB_DATA_DELTA` assumptions hold
 2. If slide fails with wrong lock / null pointer:
-   - first suspects: `SLIDE_PSELECT_WORD_SHIFT` (draft `0`) and
-     `P0_KERNEL_PHYS_LOAD` (provisional `0xa8000000`)
+   - both `SLIDE_PSELECT_WORD_SHIFT = 0` and
+     `P0_KERNEL_PHYS_LOAD = 0x80080000` are now statically derived from the
+     exact CZF5 syscall/ABL inputs; re-check their runtime observations before
+     revisiting other constants
    - **not** the bulk symbol table (already ELF/BTF verified offline)
 3. KernelSU late-load only after a confirmed root/helper path, and only with
    the `android15-6.6` artifact intended for this profile.

@@ -8,8 +8,8 @@ between KMIs.
 
 | File | Target | KMI | Purpose |
 | --- | --- | --- | --- |
-| `android15-6.6_kernelsu-s25u-kdp.ko` | `SM-S938N`, `S938NKSUACZF1` | `android15-6.6` | Standalone reference module from the previously deployed S25U build |
-| `ksud-s25u-kdp` | `SM-S938N`, `S938NKSUACZF1` | `android15-6.6` | Late-load binary embedding the 6.6 module |
+| `android15-6.6_kernelsu-s25u-kdp.ko` | `SM-S938N` `S938NKSUACZF1`; `SM-S9380` `S9380ZHUBCZF1`; feed-shared for `SM-S938U1` `S938USQSBCZF5` | `android15-6.6` | Standalone reference module from the previously deployed S25U build |
+| `ksud-s25u-kdp` | Same PA3Q `android15-6.6` feed consumers | `android15-6.6` | Late-load binary embedding the 6.6 module |
 | `android14-6.1_kernelsu-e3q-S928USQS6DZF2-kdp.ko` | `SM-S928U/SM-S928U1`, `S928USQS6DZF2` | `android14-6.1` | Exact E3Q module with target `vermagic`, audited for manual relocation |
 | `ksud-e3q-S928USQS6DZF2-kdp` | Same exact E3Q build | `android14-6.1` | Late-load binary embedding the E3Q module |
 | `android14-6.1_kernelsu-samsung-kdp.ko` | `SM-S721N` `S721NKSSCDZF3`; `SM-S921B` `S921BXXSFDZF2` | `android14-6.1` | Standalone Samsung KDP/RKP/DEFEX module with target `vermagic` |
@@ -24,6 +24,12 @@ the corresponding `ksud-*` file because `ksud late-load` loads its embedded
 The 6.1 files are build-verified but device-untested. The E3Q pair is tied to
 the full S928U DZF2 release string and must not be replaced with the generic
 6.1 pair. The 5.10 files are also build-verified and device-untested.
+
+The S938U1 CZF5 profile reuses `ksud-s25u-kdp` in the support feed for KMI
+family alignment with the other PA3Q targets. An exact-vermagic rebuild for
+`6.6.98-android15-8-pd6ff1cd-abogkiS938USQSBCZF5-4k` was not produced during
+the offline port; see
+[`docs/SM-S938U1-S938U1UESBCZF5.md`](../docs/SM-S938U1-S938U1UESBCZF5.md).
 
 ## Why the stock module crashes on Samsung
 
